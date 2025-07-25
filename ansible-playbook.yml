@@ -1,0 +1,30 @@
+---
+- name: "Build Docker images with Ansible"
+  hosts: app_servers
+  become: true
+  vars:
+    docker_username: "{{ lookup('env', 'DOCKER_USERNAME') }}"
+    docker_password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"
+    build_number: "{{ build_number }}"  # Use the build_number variable
+    repo_path: "/home/ubuntu/To-Do-List"  # Adjust this path as needed
+
+  tasks:
+    - name: Clone repo
+      command: git clone https://github.com/sharara99/To-Do-List.git
+      args:
+        chdir: /home/ubuntu
+      ignore_errors: yes
+
+    - name: Log in to Docker
+      docker_login:
+        username: "{{ docker_username }}"
+        password: "{{ docker_password }}"
+
+    - name: Build and push Docker images
+      shell: |
+        docker build -t sharara99/to-do-app:{{ build_number }} . 
+        docker push sharara99/to-do-app:{{ build_number }}
+        docker run -d --name to-do-app-container -p 80:80 sharara99/to-do-app:{{ build_number }}
+      args:
+        chdir: "{{ repo_path }}"
+      ignore_errors: yes
